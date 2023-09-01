@@ -2,7 +2,7 @@
 
 ### Introduction
 
-This repository proposes the development of a C# program designed to convert non-deterministic finite automata (NFA) to deterministic finite automata (DFA). The program also includes functionality for transforming arbitrary regular expressions into NFAs. The project's primary goal is to automate the conversion process, enabling efficient analysis and manipulation of automata in fields such as formal languages, compiler design, and pattern matching.
+This repository proposes the development of a C# program designed to convert non-deterministic finite automata (NFA) to deterministic finite automata (DFA). The program also includes functionality for transforming arbitrary regular expressions into NFAs.
 
 ### Objectives
 
@@ -11,7 +11,6 @@ The project's main objectives are outlined below:
 - **Design and Implementation**: Create a C# program that can convert a given NFA into a DFA.
 - **Regular Expression Conversion**: Develop the capability to convert arbitrary regular expressions into NFAs.
 - **Clear Representation**: Present resulting DFA and NFA models using transition representations to facilitate understanding.
-- **Efficiency and Scalability**: Optimize conversion algorithms to ensure efficiency and scalability for larger automata.
 - **Input Validation**: Ensure the program handles diverse edge cases and validates input for accuracy.
 
 ### Scope
@@ -22,7 +21,7 @@ This program focuses on the following key features:
 
 - **Regular Expression to NFA Conversion**: The program accepts a regular expression and converts it into an NFA representation.
 
-- **Transition-Based Representation**: Both resulting DFA and NFA models are presented in terms of transitions. This representation empowers users to comprehend automata behavior and facilitates in-depth analysis.
+- **Transition-Based Representation**: Both resulting DFA and NFA models are presented in terms of transitions.
 
 - **Textual Input/Output**: Input and output are exclusively text-based. 
 
