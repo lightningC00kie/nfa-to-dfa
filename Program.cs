@@ -1,110 +1,214 @@
 ﻿using static System.Console;
 using System.Collections.Generic;
 using System.Text;
+using static TransitionTable;
+using System.Linq;
 
-class intop {
+class Top {
     static void Main(string[] args) {
+        NFA nfa1 = NFAExample1();
+        DFA dfa1 = NFAtoDFAConverter.Convert(nfa1);
+       
+        GenerateTransitionTable(dfa1, "transition_table.txt");
+    }
 
-        var nfaStates = new HashSet<int> { 0, 1, 2, 3 };
-        var nfaAlphabet = new List<string> { "a", "b" };
-        var nfaStartingStates = new HashSet<int> { 0 };
-        var nfaFinalStates = new HashSet<int> { 2, 3 };
-        var nfaintransitions = new Dictionary<(int, string), List<int>> {
-            { (0, "a"), new List<int> { 1 } },
-            { (0, "b"), new List<int> { 0 } },
-            { (1, "a"), new List<int> { 1, 2 } },
-            { (1, "b"), new List<int> { 2 } },
-            { (2, "a"), new List<int> { 3 } },
-            { (3, "b"), new List<int> { 3 } }
-        };
+    private static NFA NFAExample1() {
+        List<char> alphabet = new List<char>();
+        alphabet.Add('a');
+        alphabet.Add('b');
+        List<State> states = new List<State>();
+        states.Add(new State("q0", false, true));
+        states.Add(new State("q1", false, false));
+        states.Add(new State("q2", true, false));
 
-        var nfa = new NFA(nfaStates, nfaAlphabet, nfaStartingStates, nfaFinalStates, nfaintransitions);
-        WriteLine("Starting conversion...");
-        var dfa = NFAtoDFAConverter.Convert(nfa);
-        WriteLine("Finished Convesion!");
-        WriteLine(dfa);
+        NFATransitions transitions = new NFATransitions(new Dictionary<(State, char), List<State>>());
+        transitions.addTransition(states[0], states.GetRange(0, 1), 'a');
+        transitions.addTransition(states[0], states.GetRange(0, 1), 'b');
+        transitions.addTransition(states[0], states.GetRange(1, 1), 'b');
+        transitions.addTransition(states[1], states.GetRange(2, 1), 'b');
+
+        NFA nfa = new NFA(states, alphabet, transitions);
+        return nfa;
+    }
+
+    private static NFA NFAExample2() {
+        List<char> alphabet = new List<char>();
+        alphabet.Add('0');
+        alphabet.Add('1');
+        List<State> states = new List<State>();
+        states.Add(new State("q0", false, true));
+        states.Add(new State("q1", false, false));
+        states.Add(new State("q2", true, false));
+
+        NFATransitions transitions = new NFATransitions(new Dictionary<(State, char), List<State>>());
+        transitions.addTransition(states[0], states.GetRange(0, 1), '0');
+        transitions.addTransition(states[0], states.GetRange(1, 1), '1');
+        transitions.addTransition(states[0], states.GetRange(2, 1), '1');
+        transitions.addTransition(states[1], states.GetRange(1, 1), '0');
+        transitions.addTransition(states[1], states.GetRange(2, 1), '0');
+        transitions.addTransition(states[1], states.GetRange(2, 1), '1');
+        transitions.addTransition(states[2], states.GetRange(1, 1), '0');
+        transitions.addTransition(states[2], states.GetRange(1, 1), '1');
+        transitions.addTransition(states[1], states.GetRange(0, 1), '0');
+
+        NFA nfa = new NFA(states, alphabet, transitions);
+        return nfa;
+    }
+}
+
+class State {
+    public string stateName;
+    public bool isFinal;
+    public bool isStarting;
+
+    public State(string stateName, bool isFinal, bool isStarting) {
+        this.stateName = stateName;
+        this.isFinal = isFinal;
+        this.isStarting = isStarting;
+    }
+
+    public override string ToString()
+    {
+        return this.stateName;
+    }
+}
+
+class DFAState : State{
+    public List<State>? innerStates;
+    public DFAState(string stateName, bool isFinal, bool isStarting, List<State>? innerStates) 
+    : base(stateName, isFinal, isStarting)
+    {
+        this.isFinal = isFinal;
+        this.isStarting = isStarting;
+        this.innerStates = innerStates;
+    }
+
+    public static string generateStateName(List<State> innerStates) {
+        if (innerStates.Count == 0) {
+            return "-";
+        }
+        return "{" + String.Join(", ", innerStates) + "}";
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (!(obj is DFAState)) {
+            return false;
+        }
+
+        DFAState state = (DFAState) obj;
+        if (this.innerStates == null) {
+            return state.innerStates == null;
+        }
+
+        if (state.innerStates == null) {
+            return false;
+        }
+        
+        return state.innerStates.ToHashSet().SetEquals(this.innerStates.ToHashSet());
+    }
+}
+
+class DFATransitions {
+    private Dictionary<(DFAState, char), DFAState> transitions;
+
+    public DFATransitions(Dictionary<(DFAState, char), DFAState> transitions) {
+        this.transitions = transitions;
+    }
+
+    public DFAState? getNextState(DFAState state, char symbol) {
+        DFAState? nextState;
+        this.transitions.TryGetValue((state, symbol), out nextState);
+        return nextState;
+    }
+
+    public void addTransition(DFAState fromState, DFAState toState, char symbol) {
+        this.transitions.Add((fromState, symbol), toState);
+    }
+
+    public bool transitionExists(DFAState formState, char symbol) {
+        return transitions.TryGetValue((formState, symbol), out _);
+    }
+}
+
+class NFATransitions {
+    public Dictionary<(State, char), List<State>> transitions;
+
+    public NFATransitions(Dictionary<(State, char), List<State>> transitions) {
+        this.transitions = transitions;
+    }
+
+    // takes a state and an input symbol and returns the states that are reached on the given 
+    // input symbol from the given state
+    public List<State>? getNextStates(State state, char symbol) {
+        List<State>? nextStates;
+        this.transitions.TryGetValue((state, symbol), out nextStates);
+        return nextStates;
+    }
+
+    public void addTransition(State fromState, List<State> toStates, char symbol) {
+        transitions.Add((fromState, symbol), toStates);
     }
 }
 
 class Automata {
-    public HashSet<int> states;
-    public List<string> alphabet;
-    public HashSet<int> finalStates;
+    public List<State> states;
+    public List<char> alphabet;
 
-    public Automata(HashSet<int> states, List<string> alphabet, HashSet<int> finalStates) {
+    public Automata(List<State> states, List<char> alphabet) {
         this.states = states;
         this.alphabet = alphabet;
-        this.finalStates = finalStates;
-
     }
+
+    public List<State> getStartingStates() {
+        var startingStates = new List<State>();
+        foreach (State s in this.states) {
+            if (s.isStarting) {
+                startingStates.Add(s);
+            }
+        }
+        return startingStates;
+    }
+
+    public List<State> getFinalStates() {
+        var finalStates = new List<State>();
+        foreach (State s in this.states) {
+            if (s.isFinal) {
+                finalStates.Add(s);
+            }
+        }
+        return finalStates;
+    }
+    
 }
-
-// class DFAState {
-
-// }
 
 class NFA : Automata {
-    public HashSet<int> startingStates;
-    public Dictionary<(int, string), List<int>> transitions;
+    public NFATransitions transitions;
 
-    public NFA(HashSet<int> states, List<string> alphabet, HashSet<int> startingStates, 
-    HashSet<int> finalStates, Dictionary<(int, string), List<int>> transitions) : 
-    base(states, alphabet, finalStates)
+    public NFA(List<State> states, List<char> alphabet, NFATransitions transitions) : 
+    base(states, alphabet)
     {
-    
-        this.startingStates = startingStates;
         this.transitions = transitions;
     }
 
-    public List<int>? getNextStates(int state, string input) {
-        List<int>? nextStates;
-        this.transitions.TryGetValue((state, input), out nextStates);
-        return nextStates;
-        // return this.transitions[(state, input)];
-    }
+    
 }
 
-// class DFAState
-
 class DFA : Automata {
-    public int startingState;
-    public Dictionary<(int, string), int> transitions;
+    public DFATransitions transitions;
 
-    public DFA(HashSet<int> states, List<string> alphabet, int startingState, 
-    HashSet<int> finalStates, Dictionary<(int, string), int> transitions) : 
-    base(states, alphabet, finalStates)
+    public DFA(List<State> states, List<char> alphabet, DFATransitions transitions) : 
+    base(states, alphabet)
     {
-        this.startingState = startingState;
         this.transitions = transitions;
-    }
-
-    public int getNextState(int state, string input) {
-        return this.transitions[(state, input)];
     }
 
     public override string ToString()
     {
         StringBuilder sb = new StringBuilder();
         sb.Append("all states:\n");
-        foreach (int s in this.states) {
-            sb.Append(s + " ");
-        }
-
-        sb.Append("\n");
-        sb.Append("starting state:");
-        sb.Append(this.startingState + "\n");
-
-        sb.Append("final states:\n");
-        foreach (int s in this.finalStates) {
-            sb.Append(s + " ");
-        }
-
-        sb.Append("\n");
-
-        sb.Append("transitions:\n");
-        foreach(var transition in this.transitions) {
-            sb.Append("(" + transition.Key.Item1 + ", " + transition.Key.Item2 + ") -> " + transition.Value + "\n");
-        }
+  
+        sb.Append(String.Join(", ", this.states));
 
         return sb.ToString();
     }
@@ -113,122 +217,76 @@ class DFA : Automata {
 
 class NFAtoDFAConverter {
     public static DFA Convert(NFA nfa) {
-        var dfaStates = new HashSet<HashSet<int>>();
+        var dfaStates = new List<State>();
         var dfaAlphabet = nfa.alphabet;
-        var dfaStartingState = nfa.startingStates;
-        var dfaFinalStates = new HashSet<HashSet<int>>();
-        var dfaTransitions = new Dictionary<(HashSet<int>, string), HashSet<int>>();
-        var unprocessedStates = new Queue<HashSet<int>>();
-
+        var nfaStartingState = nfa.getStartingStates();
+        var dfaTransitions = new DFATransitions(new Dictionary<(DFAState, char), DFAState>());
+        var unprocessedStates = new Queue<DFAState>();
+        var dfaStartingState = new DFAState(DFAState.generateStateName(nfaStartingState), false, true, nfaStartingState);
         unprocessedStates.Enqueue(dfaStartingState);
-        // dfaStates.Add(dfaStartingState);
+        dfaStates.Add(dfaStartingState);
         while (unprocessedStates.Count >  0) {
+            
             var currentState = unprocessedStates.Dequeue();
-            foreach (string symbol in dfaAlphabet) {
-                var nextStates = move(nfa, currentState, symbol);
+            if (currentState.innerStates == null || currentState.innerStates.Count == 0) {
+                continue;
+            }
 
+            foreach (char symbol in dfaAlphabet) {
+                DFAState nextState = move(nfa, currentState, symbol);
                 bool exists = false;
 
-                foreach (HashSet<int> stateSet in dfaStates) {
-                    if (stateSet.SetEquals(nextStates)) {
+                foreach (DFAState state in dfaStates) {
+                    if (state.Equals(nextState)) {
                         exists = true;
                         break;
                     }
                 }
 
-                if (!exists) {
-                    unprocessedStates.Enqueue(nextStates);
-
-                    HashSet<int> intersection = new HashSet<int>(nextStates);
-                    intersection.IntersectWith(nfa.finalStates);
-                    if (intersection.Count > 0) {
-                        dfaFinalStates.Add(nextStates);
-                    }
-
-                    dfaStates.Add(nextStates);
+                if (nextState.innerStates == null) {
+                    continue;
                 }
 
+                if (!exists) {
+                    unprocessedStates.Enqueue(nextState);
+                    var nfaFinalStates = nfa.getFinalStates();
+                    foreach (State finalState in nfaFinalStates) {
+                        
+                        if (nextState.innerStates.Contains(finalState)) {
+                            nextState.isFinal = true;
+                        }
+                    }
 
-                dfaTransitions[(currentState, symbol)] = nextStates;
+                    dfaStates.Add(nextState);
+                }
+
+                dfaTransitions.addTransition(currentState, nextState, symbol);
             }
         }
-        
-        var dfa = renameStates(dfaStates, dfaStartingState, dfaAlphabet, dfaFinalStates, 
-        dfaTransitions);
+
+        DFA dfa = new DFA(dfaStates, dfaAlphabet, dfaTransitions);
         return dfa;
     }
 
-    private static bool statesAreEqual(HashSet<int> state1, HashSet<int> state2) {
-        return state1.SetEquals(state2);
-    }
-
-    private static bool containsState(HashSet<HashSet<int>> states, HashSet<int> state) {
-        foreach (HashSet<int> currentState in states) {
-            if (statesAreEqual(currentState, state)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static HashSet<int> move(NFA nfa, HashSet<int> states, string symbol) {
-        var nextStates = new HashSet<int>();
-        foreach (int state in states) {
-            var currentNextStates = nfa.getNextStates(state, symbol);
+    private static DFAState move(NFA nfa, DFAState state, char symbol) { 
+        DFAState returnState;
+        List<State>? nextStates = new List<State>();
+        foreach (State s in state.innerStates!) {
+            var currentNextStates = nfa.transitions.getNextStates(s, symbol);
             if (currentNextStates == null) {
                 continue;
             }
-            foreach (int nextState in currentNextStates) {
-                nextStates.Add(nextState);
-            }
-        }
-        return nextStates;
-    }
 
-    private static string stringifyState(HashSet<int> state) {
-        StringBuilder sb = new StringBuilder();
-        sb.Append("{");
-        foreach (int s in state) {
-            sb.Append(s + ", ");
-        }
-        sb.Append("}");
-        return sb.ToString();
-    }
+            nextStates.AddRange(currentNextStates);
 
-    private static DFA renameStates(HashSet<HashSet<int>> states, HashSet<int> startingState, 
-    List<string> alphabet, HashSet<HashSet<int>> finalStates, 
-    Dictionary<(HashSet<int>, string), HashSet<int>> transitions) 
-    {
-        var dfaStates = new HashSet<int>();
-        int dfaStartingState = 0;
-        var dfaFinalStates = new HashSet<int>();
-        var dfaTransitions = new Dictionary<(int, string),int>();
-        var stateToInt = new Dictionary<HashSet<int>, int>();
-
-        stateToInt.Add(startingState, 0);
-
-        int stateCounter = 1;
-
-        foreach (HashSet<int> stateSet in states) {
-            dfaStates.Add(stateCounter);
-            if (finalStates.Contains(stateSet)) {
-                dfaFinalStates.Add(stateCounter);
-            }
-            stateToInt.Add(stateSet, stateCounter++);
+           
         }
 
-        foreach (var transition in transitions) {
-            int toState;
-            bool stateExists = stateToInt.TryGetValue(transition.Value, out toState);
-
-            if (!stateExists) {
-                continue;                
-            }
-
-            dfaTransitions.Add((stateToInt[transition.Key.Item1], transition.Key.Item2), 
-            toState);
+        if (nextStates == null) {
+            return new DFAState("", false, false, null);
         }
 
-        return new DFA(dfaStates, alphabet, dfaStartingState, dfaFinalStates, dfaTransitions);
+        returnState = new DFAState(DFAState.generateStateName(nextStates), false, false, nextStates);
+        return returnState;
     }
 }
