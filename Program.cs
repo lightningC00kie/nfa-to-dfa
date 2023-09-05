@@ -6,10 +6,15 @@ using System.Linq;
 
 class Top {
     static void Main(string[] args) {
-        NFA nfa1 = NFAExample1();
-        DFA dfa1 = NFAtoDFAConverter.Convert(nfa1);
+        // NFA nfa1 = NFAExample2();
+        // DFA dfa1 = NFAtoDFAConverter.Convert(nfa1);
        
-        GenerateTransitionTable(dfa1, "transition_table.txt");
+        // GenerateTransitionTable(dfa1, "transition_table.txt");
+
+        string regExp = "a*a(bb)*";
+        WriteLine(ExpressionTree.cleanRegex(regExp));
+        // var tree = ExpressionTree.buildExpressionTree(regExp);
+        // WriteLine(tree);
     }
 
     private static NFA NFAExample1() {
@@ -22,9 +27,11 @@ class Top {
         states.Add(new State("q2", true, false));
 
         NFATransitions transitions = new NFATransitions(new Dictionary<(State, char), List<State>>());
+        List<State> fromq0 = new List<State>();
+        fromq0.Add(states[0]);
+        fromq0.Add(states[1]);
         transitions.addTransition(states[0], states.GetRange(0, 1), 'a');
-        transitions.addTransition(states[0], states.GetRange(0, 1), 'b');
-        transitions.addTransition(states[0], states.GetRange(1, 1), 'b');
+        transitions.addTransition(states[0], fromq0, 'b');
         transitions.addTransition(states[1], states.GetRange(2, 1), 'b');
 
         NFA nfa = new NFA(states, alphabet, transitions);
@@ -42,15 +49,21 @@ class Top {
 
         NFATransitions transitions = new NFATransitions(new Dictionary<(State, char), List<State>>());
         transitions.addTransition(states[0], states.GetRange(0, 1), '0');
-        transitions.addTransition(states[0], states.GetRange(1, 1), '1');
-        transitions.addTransition(states[0], states.GetRange(2, 1), '1');
-        transitions.addTransition(states[1], states.GetRange(1, 1), '0');
-        transitions.addTransition(states[1], states.GetRange(2, 1), '0');
+        List<State> fromq0 = new List<State>();
+        fromq0.Add(states[1]);
+        fromq0.Add(states[2]);
+        transitions.addTransition(states[0], fromq0, '1');
+        List<State> fromq1 = new List<State>();
+        fromq1.Add(states[1]);
+        fromq1.Add(states[2]);
+        transitions.addTransition(states[1], fromq1, '0');
         transitions.addTransition(states[1], states.GetRange(2, 1), '1');
-        transitions.addTransition(states[2], states.GetRange(1, 1), '0');
+        List<State> fromq2 = new List<State>();
+        fromq2.Add(states[0]);
+        fromq2.Add(states[1]);
+        transitions.addTransition(states[2], fromq2, '0');
         transitions.addTransition(states[2], states.GetRange(1, 1), '1');
-        transitions.addTransition(states[1], states.GetRange(0, 1), '0');
-
+        // WriteLine(transitions.getNextStates(states[0], '1').Count);
         NFA nfa = new NFA(states, alphabet, transitions);
         return nfa;
     }
@@ -143,6 +156,8 @@ class NFATransitions {
     public List<State>? getNextStates(State state, char symbol) {
         List<State>? nextStates;
         this.transitions.TryGetValue((state, symbol), out nextStates);
+        WriteLine("From state " + state.ToString() + " on symbol " + symbol);
+        WriteLine(string.Join(", ", nextStates));
         return nextStates;
     }
 
@@ -234,6 +249,7 @@ class NFAtoDFAConverter {
 
             foreach (char symbol in dfaAlphabet) {
                 DFAState nextState = move(nfa, currentState, symbol);
+                // WriteLine(nextState);
                 bool exists = false;
 
                 foreach (DFAState state in dfaStates) {
@@ -272,12 +288,21 @@ class NFAtoDFAConverter {
         DFAState returnState;
         List<State>? nextStates = new List<State>();
         foreach (State s in state.innerStates!) {
+            // WriteLine(s)?W;
             var currentNextStates = nfa.transitions.getNextStates(s, symbol);
+            // WriteLine("From state " + s.ToString() + " on symbol " + symbol);
+            // WriteLine(nextStates.Count);
+            // WriteLine(String.Join(", ", currentNextStates));
             if (currentNextStates == null) {
                 continue;
             }
-
-            nextStates.AddRange(currentNextStates);
+            
+            foreach (State ss in currentNextStates) {
+                if (!nextStates.Contains(ss)) {
+                    nextStates.Add(ss);
+                }
+            }
+            // nextStates.AddRange(currentNextStates);
 
            
         }
