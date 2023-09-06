@@ -5,12 +5,12 @@ using static System.Console;
 
 
 class RegexToNFA {
-    static char[] nonSymbols = new char[]{'(', ')', '+', '.', '*'};
+    static readonly char[] nonSymbols = new char[]{'(', ')', '+', '.', '*'};
 
-    public static NFA nfa;
+    public static NFA nfa = new();
 
-    public static ExpressionTree buildExpressionTree(string regExp) {
-        Stack<ExpressionTree> stk = new Stack<ExpressionTree>();
+    public static ExpressionTree BuildExpressionTree(string regExp) {
+        Stack<ExpressionTree> stk = new();
         foreach (char c in regExp) {
             if (c == '+') {
                 var n = new ExpressionTree(RegexCharType.Union)
@@ -47,7 +47,7 @@ class RegexToNFA {
     }
 
     public static string addConcatenation(string regex) {
-        List<char> res = new List<char>();
+        List<char> res = new();
         for (int i = 0; i < regex.Length - 1; i++) {
             res.Add(regex[i]);
             if (!nonSymbols.Contains(regex[i])) {
@@ -74,8 +74,8 @@ class RegexToNFA {
         return new string(res.ToArray());
     }
 
-    private static bool compPrecedence(char op1, char op2) {
-        List<char> ops = new List<char>
+    private static bool CompPrecedence(char op1, char op2) {
+        List<char> ops = new()
         {
             '+',
             '.',
@@ -84,8 +84,8 @@ class RegexToNFA {
         return ops.IndexOf(op1) > ops.IndexOf(op2);
     }
 
-    public static string computePostfix(string regex) {
-        Stack<char> stk = new Stack<char>();
+    public static string ComputePostfix(string regex) {
+        Stack<char> stk = new();
         string res = "";
 
         foreach (char c in regex) {
@@ -104,11 +104,11 @@ class RegexToNFA {
             else if (c == '(') {
                 stk.Push(c);
             }
-            else if (stk.Count == 0 || stk.Peek() == '(' || compPrecedence(c, stk.Last())) {
+            else if (stk.Count == 0 || stk.Peek() == '(' || CompPrecedence(c, stk.Last())) {
                 stk.Push(c);
             }
             else {
-                while (stk.Count > 0 && stk.Peek() != '(' && !compPrecedence(c, stk.Last())) {
+                while (stk.Count > 0 && stk.Peek() != '(' && !CompPrecedence(c, stk.Last())) {
                     res += stk.Pop();
                 }
                 stk.Push(c);
@@ -123,74 +123,74 @@ class RegexToNFA {
 
     }
 
-    public static string cleanRegex(string regex) {
+    public static string CleanRegex(string regex) {
         string reg = addConcatenation(regex);
-        string regg = computePostfix(reg);
+        string regg = ComputePostfix(reg);
         return regg;
     }
 
 
-    public static (State, State) nfaConcat(ExpressionTree tree) {
-        var leftNfa = copmuteRegex(tree.left!);
-        var rightNfa = copmuteRegex(tree.right!);
+    public static (State, State) NfaConcat(ExpressionTree tree) {
+        var leftNfa = CopmuteRegex(tree.left!);
+        var rightNfa = CopmuteRegex(tree.right!);
 
-        leftNfa.Item2.nextState['$'] = getStateList(rightNfa.Item1);
+        leftNfa.Item2.nextState['$'] = GetStateList(rightNfa.Item1);
 
         return (leftNfa.Item1, rightNfa.Item2);
     }
 
-    private static (State, State) evalSymbol(ExpressionTree tree) {
+    private static (State, State) EvalSymbol(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
 
-        start.nextState[(char) tree.value!] = getStateList(end);
+        start.nextState[(char) tree.value!] = GetStateList(end);
         return (start, end);
     }
 
-    private static (State, State) nfaUnion(ExpressionTree tree) {
+    private static (State, State) NfaUnion(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
 
-        var firstNFA = copmuteRegex(tree.left!);
-        var secondNFA = copmuteRegex(tree.right!);
+        var firstNFA = CopmuteRegex(tree.left!);
+        var secondNFA = CopmuteRegex(tree.right!);
 
-        start.nextState['$'] = getStateList(firstNFA.Item1, secondNFA.Item1);
-        firstNFA.Item2.nextState['$'] = getStateList(end);
-        secondNFA.Item2.nextState['$'] = getStateList(end);
+        start.nextState['$'] = GetStateList(firstNFA.Item1, secondNFA.Item1);
+        firstNFA.Item2.nextState['$'] = GetStateList(end);
+        secondNFA.Item2.nextState['$'] = GetStateList(end);
 
         return (start, end);
     }
 
-    private static (State, State) nfaKleene(ExpressionTree tree) {
+    private static (State, State) NfaKleene(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
 
-        var starredNFA = copmuteRegex(tree.left!);
-        start.nextState['$'] = getStateList(starredNFA.Item1, end);
-        starredNFA.Item2.nextState['$'] = getStateList(starredNFA.Item1, end);
+        var starredNFA = CopmuteRegex(tree.left!);
+        start.nextState['$'] = GetStateList(starredNFA.Item1, end);
+        starredNFA.Item2.nextState['$'] = GetStateList(starredNFA.Item1, end);
         return (start, end);
     }
 
-    private static List<State> getStateList(params State[] states) {
+    private static List<State> GetStateList(params State[] states) {
         return states.ToList();
     }
 
-    public static (State, State) copmuteRegex(ExpressionTree tree) {
+    public static (State, State) CopmuteRegex(ExpressionTree tree) {
         if (tree.charType == RegexCharType.Concat) {
-            return nfaConcat(tree);
+            return NfaConcat(tree);
         }
         else if (tree.charType == RegexCharType.Union) {
-            return nfaUnion(tree);
+            return NfaUnion(tree);
         }
         else if (tree.charType == RegexCharType.Kleene) {
-            return nfaKleene(tree);
+            return NfaKleene(tree);
         }
         else {
-            return evalSymbol(tree);
+            return EvalSymbol(tree);
         }
     }
 
-    public static void makeTransitions(State state, Dictionary<State, int> findName) {
+    public static void MakeTransitions(State state, Dictionary<State, int> findName) {
         // WriteLine("here");
         if (nfa.states.Contains(state)) {
             return;
@@ -210,20 +210,20 @@ class RegexToNFA {
                     string stateName = "Q" + findName[s];
                     s.stateName = stateName;
                 }
-                nfa.transitions.addTransition(state, s, symbol);
+                nfa.AddTransition(state, s, symbol);
             }
 
             foreach (State s in state.nextState[symbol]) {
-                makeTransitions(s, findName);
+                MakeTransitions(s, findName);
             }
         }
         
     }
 
-    public static void setFinalStates() {
+    public static void SetFinalStates() {
         foreach (State s in nfa.states) {
             bool isFinal = true;
-            foreach (var transition in nfa.transitions.transitions) {
+            foreach (var transition in nfa.transitions) {
                 if (transition.Key.Item1.Equals(s) && 
                 (transition.Value.Count > 1 || !transition.Value[0].Equals(s))) {
                     isFinal = false;
@@ -233,23 +233,23 @@ class RegexToNFA {
             s.isFinal = isFinal;
         }
     }
-    public static void arrangeNFA((State, State) s) {
+    public static void ArrangeNFA((State, State) s) {
         s.Item1.isStarting = true;
-        nfa = new NFA(new List<State>(), new List<char>(), new NFATransitions());
+        nfa = new NFA(new List<State>(), new List<char>(), new Dictionary<(State, char), List<State>>());
         var findName = new Dictionary<State, int>();
         findName.Add(s.Item1, 1);
         s.Item1.stateName = "Q1";
-        makeTransitions(s.Item1, findName);
-        setFinalStates();
+        MakeTransitions(s.Item1, findName);
+        SetFinalStates();
     }
 
 
-    public static void Convert(string regex) {
-        string cr = cleanRegex(regex);
-        var tree = buildExpressionTree(cr);
-        var fa = copmuteRegex(tree);
-        arrangeNFA(fa);
-        WriteLine(nfa);
+    public static NFA Convert(string regex) {
+        string cr = CleanRegex(regex);
+        var tree = BuildExpressionTree(cr);
+        var fa = CopmuteRegex(tree);
+        ArrangeNFA(fa);
+        return nfa;
     }
 }
 
@@ -268,7 +268,7 @@ class ExpressionTree {
 
     public override string ToString()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new();
 
         if (this.value != null) {
             return "Tree(" + this.charType + ", " + this.value + ", left = " + this.left + 

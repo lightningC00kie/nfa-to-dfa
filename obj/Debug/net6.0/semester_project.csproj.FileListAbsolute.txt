@@ -13,3 +13,5 @@
 /home/bes/Documents/sem3/csharp/semester_project/obj/Debug/net6.0/semester_project.pdb
 /home/bes/Documents/sem3/csharp/semester_project/obj/Debug/net6.0/semester_project.genruntimeconfig.cache
 /home/bes/Documents/sem3/csharp/semester_project/obj/Debug/net6.0/ref/semester_project.dll
+/home/bes/Documents/sem3/csharp/semester_project/bin/Debug/net6.0/Newtonsoft.Json.dll
+/home/bes/Documents/sem3/csharp/semester_project/obj/Debug/net6.0/semester_project.csproj.CopyComplete
