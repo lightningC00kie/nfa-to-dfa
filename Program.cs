@@ -1,6 +1,8 @@
 ﻿using static System.Console;
+using System.Collections.Generic;
 using System.Text;
 using static TransitionTable;
+using System.Linq;
 
 class Top
 {
@@ -13,7 +15,7 @@ class Top
             return;
         }
 
-        if (args[0] == "-r" || args[0] == "-n")
+        if (args[0] == "-R" || args[0] == "-N")
         {
             string inputFile = args[1];
             if (!inputFile.EndsWith(".json"))
@@ -25,14 +27,14 @@ class Top
             string outputFile = args[2];
 
             string jsonContent = File.ReadAllText(inputFile);
-            if (args[0] == "-r")
+            if (args[0] == "-R")
             {
                 string regex = JsonToRegex.Convert(jsonContent);
                 NFA nfa = RegexToNFA.Convert(regex);
                 GenerateNfaTransitionTable(nfa, outputFile);
             }
 
-            else if (args[0] == "-n")
+            else if (args[0] == "-N")
             {
                 NFA nfa = JsonToNfa.Convert(jsonContent);
                 DFA dfa = NFAtoDFAConverter.Convert(nfa);
@@ -48,11 +50,11 @@ class Top
 
     private static void WriteUsage()
     {
-        WriteLine("Usage: program.exe [-r|-n] input.json output");
+        WriteLine("Usage: program.exe [-R|-N] input.json output");
 
         WriteLine("Options:");
-        WriteLine("-r    Convert regex from input file to a NFA");
-        WriteLine("-n    Convert NFA from input file to a DFA");
+        WriteLine("-R    Convert regex from input file to a NFA");
+        WriteLine("-N    Convert NFA from input file to a DFA");
         WriteLine("input.json   Path to the input JSON file to be processed.");
         WriteLine("output   Path to the output text file to store the results.");
 
@@ -67,7 +69,7 @@ class State
     public bool isFinal;
     public bool isStarting;
 
-    public Dictionary<char, List<State>> nextState = new();
+    public Dictionary<char, List<State>> nextState = new Dictionary<char, List<State>>();
 
     public State(string stateName = "", bool isFinal = false, bool isStarting = false)
     {
@@ -93,7 +95,7 @@ class DFAState : State
         this.innerStates = innerStates;
     }
 
-    public static string GenerateStateName(List<State> innerStates)
+    public static string generateStateName(List<State> innerStates)
     {
         if (innerStates.Count == 0)
         {
@@ -104,7 +106,7 @@ class DFAState : State
 
     public override bool Equals(object? obj)
     {
-        if (obj is not DFAState)
+        if (!(obj is DFAState))
         {
             return false;
         }
@@ -124,11 +126,9 @@ class DFAState : State
     }
 
     public override int GetHashCode()
-     {
-         return GetHashCode();
-     }
-
-
+    {
+        return 0;
+    }
 }
 
 
@@ -137,7 +137,7 @@ class Automata
     public List<State> states;
     public List<char> alphabet;
 
-    public Automata(List<State> states = default!, List<char> alphabet = default!)
+    public Automata(List<State> states, List<char> alphabet)
     {
         this.states = states;
         this.alphabet = alphabet;
@@ -168,14 +168,16 @@ class Automata
         }
         return finalStates;
     }
+
+
+
 }
 
 class NFA : Automata
 {
-    public Dictionary<(State, char), List<State>> transitions = new();
+    public Dictionary<(State, char), List<State>> transitions;
 
-    public NFA(List<State> states=default!, List<char> alphabet=default!, 
-    Dictionary<(State, char), List<State>> transitions = default!) :
+    public NFA(List<State> states, List<char> alphabet, Dictionary<(State, char), List<State>> transitions) :
     base(states, alphabet)
     {
         this.transitions = transitions;
@@ -300,7 +302,7 @@ class NFAtoDFAConverter
         var nfaStartingState = nfa.GetStartingStates();
         // var dfaTransitions = new DFATransitions(new Dictionary<(DFAState, char), DFAState>());
         var unprocessedStates = new Queue<DFAState>();
-        var dfaStartingState = new DFAState(DFAState.GenerateStateName(nfaStartingState), false, true, nfaStartingState);
+        var dfaStartingState = new DFAState(DFAState.generateStateName(nfaStartingState), false, true, nfaStartingState);
         unprocessedStates.Enqueue(dfaStartingState);
         dfaStates.Add(dfaStartingState);
         while (unprocessedStates.Count > 0)
@@ -314,7 +316,7 @@ class NFAtoDFAConverter
 
             foreach (char symbol in dfaAlphabet)
             {
-                DFAState nextState = Move(nfa, currentState, symbol);
+                DFAState nextState = move(nfa, currentState, symbol);
                 // WriteLine(nextState);
                 bool exists = false;
 
@@ -357,7 +359,7 @@ class NFAtoDFAConverter
         return dfa;
     }
 
-    private static DFAState Move(NFA nfa, DFAState state, char symbol)
+    private static DFAState move(NFA nfa, DFAState state, char symbol)
     {
         DFAState returnState;
         List<State>? nextStates = new List<State>();
@@ -383,7 +385,7 @@ class NFAtoDFAConverter
             return new DFAState("", false, false, null);
         }
 
-        returnState = new DFAState(DFAState.GenerateStateName(nextStates), false, false, nextStates);
+        returnState = new DFAState(DFAState.generateStateName(nextStates), false, false, nextStates);
         return returnState;
     }
 }

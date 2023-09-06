@@ -1,4 +1,4 @@
-## NFA to DFA Converter
+## NFA to DFA and Regex to NFA Converter
 
 ### Introduction
 
@@ -11,7 +11,6 @@ The project's main objectives are outlined below:
 - **Design and Implementation**: Create a C# program that can convert a given NFA into a DFA.
 - **Regular Expression Conversion**: Develop the capability to convert arbitrary regular expressions into NFAs.
 - **Clear Representation**: Present resulting DFA and NFA models using transition representations to facilitate understanding.
-- **Input Validation**: Ensure the program handles diverse edge cases and validates input for accuracy.
 
 ### Scope
 
@@ -23,20 +22,61 @@ This program focuses on the following key features:
 
 - **Transition-Based Representation**: Both resulting DFA and NFA models are presented in terms of transitions.
 
-- **Textual Input/Output**: Input and output are exclusively text-based. 
+- **JSON Input**: Input is represented in terms of JSON.
 
-- **Command Line Usage**: The program reads two file names as command line arguments. The first file contains the input, allowing for easy editing or tweaking. The program generates an output file specified by the second command line argument.
+- **Textual Output**: The output is printed into the specified output file in the form of a transition
+table along with the starting and final states of the automaton.
 
-### Usage
+## Input JSON Format
 
-To use the program, follow these steps:
+To convert from a NFA to DFA, you should provide input data in the following JSON format:
 
-1. Compile the C# program using your preferred compiler.
-2. Run the compiled program from the command line with the following arguments:
-   
-   ```
-   program.exe input.txt output.txt
-   ```
+```json
+{
+  "states": [
+    "Q1",
+    "Q2",
+    "Q3"
+  ],
+  "alphabet": [
+    "$",
+    "a",
+    "b"
+  ],
+  "transition_function": [
+    ["Q1", "$", "Q2"],
+    ["Q1", "$", "Q3"]
+  ],
+  "start_states": [],
+  "final_states": []
+}
+```
 
-   - `input.txt`: Contains the input automaton description in a specific format (see user documentation).
-   - `output.txt`: Will hold the resulting DFA or NFA description.
+To convert from a regular expression to a NFA, you should provide input data in the following JSON format:
+```json
+{
+  "regex": "a+b(ab)*"
+}
+
+This JSON structure represents the components of a finite automaton:
+
+   - "states": An array of strings representing the states of the automaton.
+   - "alphabet": An array of strings representing the alphabet symbols.
+   - "transition_function": An array of arrays where each inner array consists of three strings: the current state, the input symbol, and the next state (transition function).
+   - "start_states": An array of strings representing the initial states.
+   - "final_states": An array of strings representing the final (accepting) states.
+
+### Program Usage
+
+**Usage:** `dotnet run [-R|-N] input.json output`
+
+**Options:**
+- `-R`    Convert regex from input file to a NFA
+- `-N`    Convert NFA from input file to a DFA
+- `input.json`   Path to the input JSON file to be processed.
+- `output`   Path to the output text file to store the results.
+
+**Example:**
+```bash
+dotnet run -R input.json output.txt
+```

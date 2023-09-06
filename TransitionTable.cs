@@ -60,7 +60,6 @@ class TransitionTable {
 
     public static void GenerateNfaTransitionTable(NFA nfa, string fileName)
     {
-        // WriteLine(nfa.states.Count);
         try
         {
             using (StreamWriter sw = new StreamWriter(fileName))
@@ -74,8 +73,6 @@ class TransitionTable {
                 // WriteLine(longestStateList);
                 // Write the header row with input symbols
                 sw.Write("|" + addPadding("State", longestStateName));
-                WriteLine("Here");
-
                 foreach (char symbol in nfa.alphabet)
                 {
                     sw.Write("|" + addPadding(symbol.ToString(), longestStateName));

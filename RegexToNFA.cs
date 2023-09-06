@@ -7,7 +7,7 @@ using static System.Console;
 class RegexToNFA {
     static readonly char[] nonSymbols = new char[]{'(', ')', '+', '.', '*'};
 
-    public static NFA nfa = new();
+    public static NFA? nfa;
 
     public static ExpressionTree BuildExpressionTree(string regExp) {
         Stack<ExpressionTree> stk = new();
@@ -46,7 +46,7 @@ class RegexToNFA {
         return stk.Peek();
     }
 
-    public static string addConcatenation(string regex) {
+    public static string AddConcatenation(string regex) {
         List<char> res = new();
         for (int i = 0; i < regex.Length - 1; i++) {
             res.Add(regex[i]);
@@ -124,7 +124,7 @@ class RegexToNFA {
     }
 
     public static string CleanRegex(string regex) {
-        string reg = addConcatenation(regex);
+        string reg = AddConcatenation(regex);
         string regg = ComputePostfix(reg);
         return regg;
     }
@@ -191,8 +191,7 @@ class RegexToNFA {
     }
 
     public static void MakeTransitions(State state, Dictionary<State, int> findName) {
-        // WriteLine("here");
-        if (nfa.states.Contains(state)) {
+        if (nfa!.states.Contains(state)) {
             return;
         }
 
@@ -221,7 +220,7 @@ class RegexToNFA {
     }
 
     public static void SetFinalStates() {
-        foreach (State s in nfa.states) {
+        foreach (State s in nfa!.states) {
             bool isFinal = true;
             foreach (var transition in nfa.transitions) {
                 if (transition.Key.Item1.Equals(s) && 
@@ -249,7 +248,7 @@ class RegexToNFA {
         var tree = BuildExpressionTree(cr);
         var fa = CopmuteRegex(tree);
         ArrangeNFA(fa);
-        return nfa;
+        return nfa!;
     }
 }
 
