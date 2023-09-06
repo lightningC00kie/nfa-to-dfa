@@ -12,9 +12,10 @@ class Top {
         // GenerateTransitionTable(dfa1, "transition_table.txt");
 
         string regExp = "a*a(bb)*";
-        WriteLine(ExpressionTree.cleanRegex(regExp));
-        // var tree = ExpressionTree.buildExpressionTree(regExp);
+        // string ce = ExpressionTree.cleanRegex(regExp);
+        // var tree = ExpressionTree.buildExpressionTree(ce);
         // WriteLine(tree);
+        RegexToNFA.Convert(regExp);
     }
 
     private static NFA NFAExample1() {
@@ -26,7 +27,7 @@ class Top {
         states.Add(new State("q1", false, false));
         states.Add(new State("q2", true, false));
 
-        NFATransitions transitions = new NFATransitions(new Dictionary<(State, char), List<State>>());
+        NFATransitions transitions = new NFATransitions();
         List<State> fromq0 = new List<State>();
         fromq0.Add(states[0]);
         fromq0.Add(states[1]);
@@ -47,7 +48,7 @@ class Top {
         states.Add(new State("q1", false, false));
         states.Add(new State("q2", true, false));
 
-        NFATransitions transitions = new NFATransitions(new Dictionary<(State, char), List<State>>());
+        NFATransitions transitions = new NFATransitions();
         transitions.addTransition(states[0], states.GetRange(0, 1), '0');
         List<State> fromq0 = new List<State>();
         fromq0.Add(states[1]);
@@ -73,6 +74,8 @@ class State {
     public string stateName;
     public bool isFinal;
     public bool isStarting;
+
+    public Dictionary<char, List<State>> nextState = new Dictionary<char, List<State>>();
 
     public State(string stateName, bool isFinal, bool isStarting) {
         this.stateName = stateName;
@@ -145,24 +148,41 @@ class DFATransitions {
 }
 
 class NFATransitions {
-    public Dictionary<(State, char), List<State>> transitions;
-
-    public NFATransitions(Dictionary<(State, char), List<State>> transitions) {
-        this.transitions = transitions;
-    }
+    public Dictionary<(State, char), List<State>> transitions = new Dictionary<(State, char), List<State>>();
 
     // takes a state and an input symbol and returns the states that are reached on the given 
     // input symbol from the given state
     public List<State>? getNextStates(State state, char symbol) {
         List<State>? nextStates;
         this.transitions.TryGetValue((state, symbol), out nextStates);
-        WriteLine("From state " + state.ToString() + " on symbol " + symbol);
-        WriteLine(string.Join(", ", nextStates));
         return nextStates;
     }
 
     public void addTransition(State fromState, List<State> toStates, char symbol) {
+        if (transitions.ContainsKey((fromState, symbol))) {
+            var existingStates = transitions[(fromState, symbol)];
+            foreach(State s in toStates) {
+                if (!existingStates.Contains(s)) {
+                    addTransition(fromState, s, symbol);
+                }
+            }
+        }
+        else {
+            transitions.Add((fromState, symbol), toStates);
+        }
         transitions.Add((fromState, symbol), toStates);
+    }
+
+    public void addTransition(State fromState, State toState, char symbol) {
+        if (transitions.ContainsKey((fromState, symbol))) {
+            transitions[(fromState, symbol)].Add(toState);
+        }
+        else {
+            var stateList = new List<State>() {
+                toState
+            };
+            transitions.Add((fromState, symbol), stateList);
+        }
     }
 }
 
@@ -206,7 +226,24 @@ class NFA : Automata {
         this.transitions = transitions;
     }
 
-    
+    public override string ToString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append("States:\n");
+        sb.Append(string.Join(", ", this.states));
+
+        sb.Append("Transitions\n");
+        foreach(var transition in this.transitions.transitions) {
+            var fromState = transition.Key.Item1;
+            sb.Append((fromState.isStarting ? "->" : "") + (fromState.isFinal ? "<-" : "") + fromState + "-(" + transition.Key.Item2 + ")->{" + string.Join(", ", transition.Value) + "}\n");
+        }
+        sb.Append("Final States:\n");
+        foreach (State s in this.getFinalStates()) {
+            sb.Append(s);
+        }
+        return sb.ToString();
+    }
+
 }
 
 class DFA : Automata {
@@ -288,11 +325,7 @@ class NFAtoDFAConverter {
         DFAState returnState;
         List<State>? nextStates = new List<State>();
         foreach (State s in state.innerStates!) {
-            // WriteLine(s)?W;
             var currentNextStates = nfa.transitions.getNextStates(s, symbol);
-            // WriteLine("From state " + s.ToString() + " on symbol " + symbol);
-            // WriteLine(nextStates.Count);
-            // WriteLine(String.Join(", ", currentNextStates));
             if (currentNextStates == null) {
                 continue;
             }
@@ -302,9 +335,6 @@ class NFAtoDFAConverter {
                     nextStates.Add(ss);
                 }
             }
-            // nextStates.AddRange(currentNextStates);
-
-           
         }
 
         if (nextStates == null) {
