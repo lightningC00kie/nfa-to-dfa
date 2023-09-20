@@ -57,6 +57,7 @@ To convert from a regular expression to a NFA, you should provide input data in 
 {
   "regex": "a+b(ab)*"
 }
+```
 
 This JSON structure represents the components of a finite automaton:
 
