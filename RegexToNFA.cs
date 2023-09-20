@@ -46,6 +46,7 @@ class RegexToNFA {
         return stk.Peek();
     }
 
+    // add . where necessary for preprocessing before tree building
     public static string AddConcatenation(string regex) {
         List<char> res = new();
         for (int i = 0; i < regex.Length - 1; i++) {
@@ -57,6 +58,7 @@ class RegexToNFA {
                 }
             }
 
+            // concat is added to all places where . might be necessary 
             if (regex[i] == ')' && regex[i + 1] == '(') {
                 res.Add('.');
             }
@@ -74,6 +76,7 @@ class RegexToNFA {
         return new string(res.ToArray());
     }
 
+    // check if op1 has precedence over op2
     private static bool CompPrecedence(char op1, char op2) {
         List<char> ops = new()
         {
@@ -129,7 +132,8 @@ class RegexToNFA {
         return regg;
     }
 
-
+    // returns start and end states of nfa after concatenation operation
+    // is applied on the given expression tree
     public static (State, State) NfaConcat(ExpressionTree tree) {
         var leftNfa = CopmuteRegex(tree.left!);
         var rightNfa = CopmuteRegex(tree.right!);
@@ -139,6 +143,7 @@ class RegexToNFA {
         return (leftNfa.Item1, rightNfa.Item2);
     }
 
+    // build symbol nfa
     private static (State, State) EvalSymbol(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
@@ -147,6 +152,7 @@ class RegexToNFA {
         return (start, end);
     }
 
+    // build union nfa
     private static (State, State) NfaUnion(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
@@ -161,6 +167,7 @@ class RegexToNFA {
         return (start, end);
     }
 
+    // build kleene star nfa
     private static (State, State) NfaKleene(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
@@ -171,6 +178,8 @@ class RegexToNFA {
         return (start, end);
     }
 
+    // takes an arbitrary number of states as arguments
+    // and returns them in a List
     private static List<State> GetStateList(params State[] states) {
         return states.ToList();
     }
@@ -190,28 +199,38 @@ class RegexToNFA {
         }
     }
 
+    // recursively explore the state diagram and add transitions accordingly
     public static void MakeTransitions(State state, Dictionary<State, int> findName) {
         if (nfa!.states.Contains(state)) {
             return;
         }
 
+        // state is not in the nfa, so add it to the nfa
         nfa.states.Add(state);
 
         foreach (var transition in state.nextState) {
             char symbol = transition.Key;
+            // if the nfa alphabet does not contain the given symbol
+            // then add it to the alphabet
             if (!nfa.alphabet.Contains(symbol)) {
                 nfa.alphabet.Add(symbol);
             }
 
+            // if a state that has not been seen before is found
+            // then form the name of the state by incrementing the
+            // largest state name found by 1 and adding Q to the beginning
             foreach (State s in state.nextState[symbol]) {
                 if (!findName.ContainsKey(s)) {
                     findName.Add(s, findName.Values.Max() + 1);
                     string stateName = "Q" + findName[s];
                     s.stateName = stateName;
                 }
+                // add the transition to the nfa
                 nfa.AddTransition(state, s, symbol);
             }
 
+            // recursive call to add transition for the next state
+            // in the state diagram
             foreach (State s in state.nextState[symbol]) {
                 MakeTransitions(s, findName);
             }
@@ -219,6 +238,8 @@ class RegexToNFA {
         
     }
 
+    // a state is final if it is a state with no outgoing transitions except
+    // to itself
     public static void SetFinalStates() {
         foreach (State s in nfa!.states) {
             bool isFinal = true;
@@ -232,6 +253,8 @@ class RegexToNFA {
             s.isFinal = isFinal;
         }
     }
+
+    // set starting and final states of NFA and name the states.
     public static void ArrangeNFA((State, State) s) {
         s.Item1.isStarting = true;
         nfa = new NFA(new List<State>(), new List<char>(), new Dictionary<(State, char), List<State>>());
@@ -244,8 +267,11 @@ class RegexToNFA {
 
 
     public static NFA Convert(string regex) {
+        // converts regex into form suitable for tree building
         string cr = CleanRegex(regex);
+        // builds tree from cleaned regex
         var tree = BuildExpressionTree(cr);
+        // 
         var fa = CopmuteRegex(tree);
         ArrangeNFA(fa);
         return nfa!;
@@ -253,8 +279,11 @@ class RegexToNFA {
 }
 
 class ExpressionTree {
+    // charType can be symbol, or operator (Kleene, Concat, Union)
     public RegexCharType charType;
-    public char? value;
+    // value holds the symbol if the node is not RegexCharType
+    public char? value; 
+    // every tree has a right and left child
     public ExpressionTree? right;
     public ExpressionTree? left;
 
