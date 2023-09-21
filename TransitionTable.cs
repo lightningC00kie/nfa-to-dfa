@@ -67,11 +67,7 @@ class TransitionTable {
                 List<State> longestList = nfa.transitions.Values.
                 OrderByDescending(list => list.Count).FirstOrDefault()!;
 
-                // int longestStateList = nfa.transitions.transitions.Max(t => t.Value.Count);
                 int longestStateName = stringifyStateList(longestList).Length;
-
-                // WriteLine(longestStateList);
-                // Write the header row with input symbols
                 sw.Write("|" + addPadding("State", longestStateName));
                 foreach (char symbol in nfa.alphabet)
                 {
@@ -110,10 +106,6 @@ class TransitionTable {
         {
             Console.WriteLine("An error occurred: " + e.Message);
         }
-    }
-
-    private static string stringifyStateList(List<State> states) {
-        return "{" + string.Join(", ", states) + "}";
     }
 
     private static string addPadding(string text, int length) {

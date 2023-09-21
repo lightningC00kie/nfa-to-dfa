@@ -15,9 +15,16 @@ class JsonRegex {
     public string? regex { get; set; }
 }
 
+
 class JsonToRegex {
+    // JsonToRegex
+    // converts a given string formatted in JSON
+    // to an instance of the JsonRegex class
+    // if the string is not formatted correctly
+    // then throw an exception and exit
     public static string Convert(string json) {
         try {
+
             JsonRegex jsonRegex = JsonConvert.DeserializeObject<JsonRegex>(json)!;
             return jsonRegex.regex!;
         }
@@ -31,13 +38,22 @@ class JsonToRegex {
 }
 
 class JsonToNfa {
+    // JsonToNfa
+    // converts a given string formatted in JSON
+    // to an instance of the JsonNfa class
     public static NFA Convert(string json) {
         JsonNfa jsonNfa = JsonConvert.DeserializeObject<JsonNfa>(json)!;
+
+        // build the a new NFA instance from the JsonNfa class instance
         List<char> alphabet = new List<char>();
         foreach (string symbol in jsonNfa.alphabet!) {
+            // convert the alphabet to char
             alphabet.Add(char.Parse(symbol));
         }
 
+        // build list of states of the NFA
+        // findState is a dictionary that takes the state name as key
+        // and returns the state itself as value
         var findState = new Dictionary<string, State>();
         List<State> states = new List<State>();
         foreach (string s in jsonNfa.states!) {
@@ -53,18 +69,17 @@ class JsonToNfa {
             states.Add(state);
         }
 
+        // new NFA instance initialized with all the states and alphabet
         NFA nfa = new NFA(states, alphabet, new Dictionary<(State, char), List<State>>());
 
-        // NFATransitions NfaTransitions = new NFATransitions();
+        // building the transitions for the NFA and adding it to the transitions dictionary
+        // using the AddTransition function
         foreach (var transition in jsonNfa.transition_function!) {
             State fromState = findState[transition[0]];
             char symbol = char.Parse(transition[1]);
             State toState = findState[transition[2]];
             nfa.AddTransition(fromState, toState, symbol);
         }
-            // WriteLine("JSON format is incorrect: " + e.Message);
-            // System.Environment.Exit(1);
-
         
         return nfa;
     }

@@ -9,6 +9,8 @@ class RegexToNFA {
 
     public static NFA? nfa;
 
+    // BuildExpressionTree takes postfix regex as string and returns
+    // the root of the expression tree when completed
     public static ExpressionTree BuildExpressionTree(string regExp) {
         Stack<ExpressionTree> stk = new();
         foreach (char c in regExp) {
@@ -87,6 +89,9 @@ class RegexToNFA {
         return ops.IndexOf(op1) > ops.IndexOf(op2);
     }
 
+    // computePostfix
+    // takes string of regex and returns the postfix equivalent expression
+    // to then be passed on to BuildExpressionTree to build the expression tree
     public static string ComputePostfix(string regex) {
         Stack<char> stk = new();
         string res = "";
@@ -126,6 +131,10 @@ class RegexToNFA {
 
     }
 
+    // CleanRegex
+    // adds concatenation to the given regex
+    // and then converts it to postfix
+    // before returning the cleaned postfix expression
     public static string CleanRegex(string regex) {
         string reg = AddConcatenation(regex);
         string regg = ComputePostfix(reg);
@@ -143,7 +152,9 @@ class RegexToNFA {
         return (leftNfa.Item1, rightNfa.Item2);
     }
 
-    // build symbol nfa
+    // returns start and end states of nfa after building an NFA
+    // accepting just an alphabet symbol, contained at the root of the
+    // given ExpressionTree
     private static (State, State) EvalSymbol(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
@@ -152,7 +163,8 @@ class RegexToNFA {
         return (start, end);
     }
 
-    // build union nfa
+    // returns start and end states of nfa after building an NFA representing
+    // the union of the right and left branches of the given expression tree
     private static (State, State) NfaUnion(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
@@ -167,7 +179,9 @@ class RegexToNFA {
         return (start, end);
     }
 
-    // build kleene star nfa
+    /// returns start and end states of nfa after building an NFA
+    // representing the kleene star applied to the left child of the
+    // given ExpressionTree
     private static (State, State) NfaKleene(ExpressionTree tree) {
         State start = new State("", false, false);
         State end = new State("", false, false);
@@ -184,6 +198,11 @@ class RegexToNFA {
         return states.ToList();
     }
 
+    // takes the root of an expression tree representing a regular expression
+    // and calls the appropriate function, depending on the root of the tree.
+    // The function called will then recursively call this function to build
+    // NFAs for the children nodes until the whole tree is explored and the
+    // child NFAs are built 
     public static (State, State) CopmuteRegex(ExpressionTree tree) {
         if (tree.charType == RegexCharType.Concat) {
             return NfaConcat(tree);
@@ -271,7 +290,6 @@ class RegexToNFA {
         string cr = CleanRegex(regex);
         // builds tree from cleaned regex
         var tree = BuildExpressionTree(cr);
-        // 
         var fa = CopmuteRegex(tree);
         ArrangeNFA(fa);
         return nfa!;
